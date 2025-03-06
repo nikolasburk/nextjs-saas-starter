@@ -1,6 +1,5 @@
 import { stripe } from '../payments/stripe';
-import { db } from './drizzle';
-import { users, teams, teamMembers } from './schema';
+import { prisma } from './prisma';
 import { hashPassword } from '@/lib/auth/session';
 
 async function createStripeProducts() {
@@ -44,30 +43,26 @@ async function seed() {
   const password = 'admin123';
   const passwordHash = await hashPassword(password);
 
-  const [user] = await db
-    .insert(users)
-    .values([
-      {
-        email: email,
-        passwordHash: passwordHash,
-        role: "owner",
-      },
-    ])
-    .returning();
+  const user = await prisma.user.create({
+    data: {
+      email: email,
+      passwordHash: passwordHash,
+      role: "owner",
+    }
+  });
 
   console.log('Initial user created.');
 
-  const [team] = await db
-    .insert(teams)
-    .values({
+  const team = await prisma.team.create({
+    data: {
       name: 'Test Team',
-    })
-    .returning();
-
-  await db.insert(teamMembers).values({
-    teamId: team.id,
-    userId: user.id,
-    role: 'owner',
+      teamMembers: {
+        create: {
+          userId: user.id,
+          role: 'owner',
+        }
+      }
+    }
   });
 
   await createStripeProducts();
@@ -78,7 +73,8 @@ seed()
     console.error('Seed process failed:', error);
     process.exit(1);
   })
-  .finally(() => {
+  .finally(async () => {
+    await prisma.$disconnect();
     console.log('Seed process finished. Exiting...');
     process.exit(0);
   });

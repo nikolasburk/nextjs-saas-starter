@@ -1,6 +1,4 @@
-import { desc, and, eq, isNull } from 'drizzle-orm';
-import { db } from './drizzle';
-import { activityLogs, teamMembers, teams, users } from './schema';
+import { prisma } from './prisma';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth/session';
 
@@ -23,27 +21,20 @@ export async function getUser() {
     return null;
   }
 
-  const user = await db
-    .select()
-    .from(users)
-    .where(and(eq(users.id, sessionData.user.id), isNull(users.deletedAt)))
-    .limit(1);
+  const user = await prisma.user.findFirst({
+    where: {
+      id: sessionData.user.id,
+      deletedAt: null
+    }
+  });
 
-  if (user.length === 0) {
-    return null;
-  }
-
-  return user[0];
+  return user;
 }
 
 export async function getTeamByStripeCustomerId(customerId: string) {
-  const result = await db
-    .select()
-    .from(teams)
-    .where(eq(teams.stripeCustomerId, customerId))
-    .limit(1);
-
-  return result.length > 0 ? result[0] : null;
+  return await prisma.team.findUnique({
+    where: { stripeCustomerId: customerId }
+  });
 }
 
 export async function updateTeamSubscription(
@@ -55,27 +46,33 @@ export async function updateTeamSubscription(
     subscriptionStatus: string;
   }
 ) {
-  await db
-    .update(teams)
-    .set({
+  await prisma.team.update({
+    where: { id: teamId },
+    data: {
       ...subscriptionData,
       updatedAt: new Date(),
-    })
-    .where(eq(teams.id, teamId));
+    }
+  });
 }
 
 export async function getUserWithTeam(userId: number) {
-  const result = await db
-    .select({
-      user: users,
-      teamId: teamMembers.teamId,
-    })
-    .from(users)
-    .leftJoin(teamMembers, eq(users.id, teamMembers.userId))
-    .where(eq(users.id, userId))
-    .limit(1);
+  const result = await prisma.user.findFirst({
+    where: { id: userId },
+    include: {
+      teamMembers: {
+        select: {
+          teamId: true
+        }
+      }
+    }
+  });
 
-  return result[0];
+  if (!result) return null;
+
+  return {
+    user: result,
+    teamId: result.teamMembers[0]?.teamId
+  };
 }
 
 export async function getActivityLogs() {
@@ -84,45 +81,48 @@ export async function getActivityLogs() {
     throw new Error('User not authenticated');
   }
 
-  return await db
-    .select({
-      id: activityLogs.id,
-      action: activityLogs.action,
-      timestamp: activityLogs.timestamp,
-      ipAddress: activityLogs.ipAddress,
-      userName: users.name,
-    })
-    .from(activityLogs)
-    .leftJoin(users, eq(activityLogs.userId, users.id))
-    .where(eq(activityLogs.userId, user.id))
-    .orderBy(desc(activityLogs.timestamp))
-    .limit(10);
+  return await prisma.activityLog.findMany({
+    select: {
+      id: true,
+      action: true,
+      timestamp: true,
+      ipAddress: true,
+      user: {
+        select: {
+          name: true
+        }
+      }
+    },
+    where: { userId: user.id },
+    orderBy: { timestamp: 'desc' },
+    take: 10
+  });
 }
 
 export async function getTeamForUser(userId: number) {
-  const result = await db.query.users.findFirst({
-    where: eq(users.id, userId),
-    with: {
+  const result = await prisma.user.findFirst({
+    where: { id: userId },
+    include: {
       teamMembers: {
-        with: {
+        include: {
           team: {
-            with: {
+            include: {
               teamMembers: {
-                with: {
+                include: {
                   user: {
-                    columns: {
+                    select: {
                       id: true,
                       name: true,
                       email: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   });
 
   return result?.teamMembers[0]?.team || null;

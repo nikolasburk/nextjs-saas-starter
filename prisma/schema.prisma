@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
+}
+
+model ActivityLog {
+  id         Int       @id @default(autoincrement())
+  teamId     Int       @map("team_id")
+  userId     Int?      @map("user_id")
+  action     String
+  timestamp  DateTime  @default(now()) @db.Timestamp(6)
+  ipAddress  String?   @map("ip_address") @db.VarChar(45)
+  team       Team      @relation(fields: [teamId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user       User?     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("activity_logs")
+}
+
+model Invitation {
+  id        Int      @id @default(autoincrement())
+  teamId    Int      @map("team_id")
+  email     String   @db.VarChar(255)
+  role      String   @db.VarChar(50)
+  invitedBy Int      @map("invited_by")
+  invitedAt DateTime @default(now()) @map("invited_at") @db.Timestamp(6)
+  status    String   @default("pending") @db.VarChar(20)
+  inviter   User     @relation(fields: [invitedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("invitations")
+}
+
+model TeamMember {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  teamId    Int      @map("team_id")
+  role      String   @db.VarChar(50)
+  joinedAt  DateTime @default(now()) @map("joined_at") @db.Timestamp(6)
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user      User     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("team_members")
+}
+
+model Team {
+  id                   Int           @id @default(autoincrement())
+  name                 String        @db.VarChar(100)
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt           DateTime      @default(now()) @map("updated_at") @db.Timestamp(6)
+  stripeCustomerId    String?       @unique @map("stripe_customer_id")
+  stripeSubscriptionId String?      @unique @map("stripe_subscription_id")
+  stripeProductId     String?       @map("stripe_product_id")
+  planName           String?       @map("plan_name") @db.VarChar(50)
+  subscriptionStatus String?       @map("subscription_status") @db.VarChar(20)
+  activityLogs       ActivityLog[]
+  invitations        Invitation[]
+  teamMembers        TeamMember[]
+
+  @@map("teams")
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  name         String?       @db.VarChar(100)
+  email        String        @unique @db.VarChar(255)
+  passwordHash String        @map("password_hash")
+  role         String        @default("member") @db.VarChar(20)
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt    DateTime      @default(now()) @map("updated_at") @db.Timestamp(6)
+  deletedAt    DateTime?     @map("deleted_at") @db.Timestamp(6)
+  activityLogs ActivityLog[]
+  invitations  Invitation[]
+  teamMembers  TeamMember[]
+
+  @@map("users")
+}
