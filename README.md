@@ -19,7 +19,7 @@ This is a starter template for building a SaaS application using **Next.js** wit
 ## Tech Stack
 
 - **Framework**: [Next.js](https://nextjs.org/)
-- **Database**: [Postgres](https://www.postgresql.org/)
+- **Database**: [Prisma Postgres](https://www.prisma.io/postgres)
 - **ORM**: [Prisma](https://www.prisma.io/)
 - **Payments**: [Stripe](https://stripe.com/)
 - **UI Library**: [shadcn/ui](https://ui.shadcn.com/)
@@ -31,6 +31,22 @@ git clone https://github.com/nextjs/saas-starter
 cd saas-starter
 pnpm install
 ```
+
+## Creating a Prisma Postgres Database
+
+Run the following command in your termina:
+
+```
+npx prisma init --db
+```
+
+This command is interactive and will prompt you to:
+
+1. Log in to the Prisma Console
+1. Select a **region** for your Prisma Postgres instance
+1. Give a **name** to your Prisma project
+
+Once the command has terminated, copy the Database URL from the terminal output. You'll need it in the next step when you configure your `.env` file.
 
 ## Running Locally
 
@@ -99,7 +115,7 @@ In your Vercel project settings (or during deployment), add all the necessary en
 1. `BASE_URL`: Set this to your production domain.
 2. `STRIPE_SECRET_KEY`: Use your Stripe secret key for the production environment.
 3. `STRIPE_WEBHOOK_SECRET`: Use the webhook secret from the production webhook you created in step 1.
-4. `POSTGRES_URL`: Set this to your production database URL.
+4. `DATABASE_URL`: Set this to your production database URL.
 5. `AUTH_SECRET`: Set this to a random string. `openssl rand -base64 32` will generate one.
 
 ## Other Templates

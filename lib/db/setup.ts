@@ -78,74 +78,79 @@ async function checkStripeCLI() {
 }
 
 async function getPostgresURL(): Promise<string> {
-  console.log('Step 2: Setting up Postgres');
-  const dbChoice = await question(
-    'Do you want to use a local Postgres instance with Docker (L) or a remote Postgres instance (R)? (L/R): '
-  );
+  console.log('Step 2: Setting up Prisma Postgres');
+  // const dbChoice = await question(
+  //   'Do you want to use a local Postgres instance with Docker (L) or a remote Postgres instance (R)? (L/R): '
+  // );
 
-  if (dbChoice.toLowerCase() === 'l') {
-    console.log('Setting up local Postgres instance with Docker...');
-    await setupLocalPostgres();
-    return 'postgres://postgres:postgres@localhost:54322/postgres';
-  } else {
-    console.log(
-      'You can find Postgres databases at: https://vercel.com/marketplace?category=databases'
-    );
-    return await question('Enter your POSTGRES_URL: ');
-  }
+  console.log(
+    'Use the database URL you received from running `npx prisma init --db` in the previous step.'
+  );
+  return await question('Enter your DATABASE_URL: ');
+
+  // if (dbChoice.toLowerCase() === 'l') {
+  //   console.log('Setting up local Postgres instance with Docker...');
+  //   await setupLocalPostgres();
+  //   return 'postgres://postgres:postgres@localhost:54322/postgres';
+  // } else {
+  //   console.log(
+  //     'You can find Postgres databases at: https://vercel.com/marketplace?category=databases'
+  //   );
+  //   return await question('Enter your DATABASE_URL: ');
+  // }
 }
 
-async function setupLocalPostgres() {
-  console.log('Checking if Docker is installed...');
-  try {
-    await execAsync('docker --version');
-    console.log('Docker is installed.');
-  } catch (error) {
-    console.error(
-      'Docker is not installed. Please install Docker and try again.'
-    );
-    console.log(
-      'To install Docker, visit: https://docs.docker.com/get-docker/'
-    );
-    process.exit(1);
-  }
+// async function setupLocalPostgres() {
+//   console.log('Checking if Docker is installed...');
+//   try {
+//     await execAsync('docker --version');
+//     console.log('Docker is installed.');
+//   } catch (error) {
+//     console.error(
+//       'Docker is not installed. Please install Docker and try again.'
+//     );
+//     console.log(
+//       'To install Docker, visit: https://docs.docker.com/get-docker/'
+//     );
+//     process.exit(1);
+//   }
 
-  console.log('Creating docker-compose.yml file...');
-  const dockerComposeContent = `
-services:
-  postgres:
-    image: postgres:16.4-alpine
-    container_name: next_saas_starter_postgres
-    environment:
-      POSTGRES_DB: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "54322:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+//   console.log('Creating docker-compose.yml file...');
+//   const dockerComposeContent = `
+// services:
+//   postgres:
+//     image: postgres:16.4-alpine
+//     container_name: next_saas_starter_postgres
+//     environment:
+//       POSTGRES_DB: postgres
+//       POSTGRES_USER: postgres
+//       POSTGRES_PASSWORD: postgres
+//     ports:
+//       - "54322:5432"
+//     volumes:
+//       - postgres_data:/var/lib/postgresql/data
 
-volumes:
-  postgres_data:
-`;
+// volumes:
+//   postgres_data:
+// `;
 
-  await fs.writeFile(
-    path.join(process.cwd(), 'docker-compose.yml'),
-    dockerComposeContent
-  );
-  console.log('docker-compose.yml file created.');
+//   await fs.writeFile(
+//     path.join(process.cwd(), 'docker-compose.yml'),
+//     dockerComposeContent
+//   );
+//   console.log('docker-compose.yml file created.');
 
-  console.log('Starting Docker container with `docker compose up -d`...');
-  try {
-    await execAsync('docker compose up -d');
-    console.log('Docker container started successfully.');
-  } catch (error) {
-    console.error(
-      'Failed to start Docker container. Please check your Docker installation and try again.'
-    );
-    process.exit(1);
-  }
-}
+//   console.log('Starting Docker container with `docker compose up -d`...');
+//   try {
+//     await execAsync('docker compose up -d');
+//     console.log('Docker container started successfully.');
+//   } catch (error) {
+//     console.error(
+//       'Failed to start Docker container. Please check your Docker installation and try again.'
+//     );
+//     process.exit(1);
+//   }
+// }
 
 async function getStripeSecretKey(): Promise<string> {
   console.log('Step 3: Getting Stripe Secret Key');
@@ -196,14 +201,14 @@ async function writeEnvFile(envVars: Record<string, string>) {
 async function main() {
   await checkStripeCLI();
 
-  const POSTGRES_URL = await getPostgresURL();
+  const DATABASE_URL = await getPostgresURL();
   const STRIPE_SECRET_KEY = await getStripeSecretKey();
   const STRIPE_WEBHOOK_SECRET = await createStripeWebhook();
   const BASE_URL = 'http://localhost:3000';
   const AUTH_SECRET = generateAuthSecret();
 
   await writeEnvFile({
-    POSTGRES_URL,
+    DATABASE_URL,
     STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET,
     BASE_URL,
