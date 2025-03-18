@@ -2,8 +2,6 @@
 
 This is a starter template for building a SaaS application using **Next.js** with support for authentication, Stripe integration for payments, and a dashboard for logged-in users.
 
-**Demo: [https://next-saas-start.vercel.app/](https://next-saas-start.vercel.app/)**
-
 ## Features
 
 - Marketing landing page (`/`) with animated Terminal element
@@ -42,11 +40,11 @@ npx prisma init --db
 
 This command is interactive and will prompt you to:
 
-1. Log in to the Prisma Console
-1. Select a **region** for your Prisma Postgres instance
-1. Give a **name** to your Prisma project
+1. Log in to the [Prisma Console](https://console.prisma.io).
+1. Select a **region** for your Prisma Postgres instance.
+1. Give a **name** to your Prisma project.
 
-Once the command has terminated, copy the Database URL from the terminal output. You'll need it in the next step when you configure your `.env` file.
+Once the command has terminated, copy the **Database URL** from the terminal output. You'll need it in the next step when you configure your database connection.
 
 ## Running Locally
 
